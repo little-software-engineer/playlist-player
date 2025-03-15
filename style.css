@@ -1,18 +1,17 @@
 :root {
   --primary-color: #2DD4BF;
-  /* Teal/mint akcenat */
-  /* Moderna roze-crvena */
+  
   --background-dark: #0F172A;
-  /* Tamno plava pozadina */
+
   --surface-dark: #1E293B;
-  /* Tamna površina komponenti */
+
   --surface-light: #334155;
-  /* Svetlija površina za hover */
+
   --text-primary: #F8FAFC;
   --text-secondary: #94A3B8;
   --accent-gradient: linear-gradient(145deg, #2DD4BF, #14B8A6);
   --accent-color: #E94560;
-  /* Ista kao primary za konzistentnost */
+
   --hover-color: #333333;
 }
 
