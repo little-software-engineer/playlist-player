@@ -18,10 +18,6 @@ A modern and interactive music player built using **JavaScript, HTML, and CSS**.
 - **jsmediatags** – Extracts metadata (title, artist, album art) from audio files.
 - **FontAwesome** – Icons for better UX.
 
-## 📸 Screenshots
-
-![Music Player Screenshot](screenshot.png)
-
 
 ## 🔧 Setup & Usage
 
