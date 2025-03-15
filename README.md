@@ -20,8 +20,8 @@ A modern and interactive music player built using **JavaScript, HTML, and CSS**.
 
 ## 📸 Screenshots
 
-![Music Player Screenshot](![image](https://github.com/user-attachments/assets/e52cba91-9872-4b0c-87bf-8cfe44b68e21)
-) *(Replace with an actual screenshot of your app)*
+![Music Player Screenshot](screenshot.png)
+
 
 ## 🔧 Setup & Usage
 
