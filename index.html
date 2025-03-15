@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Music Player</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://kit.fontawesome.com/3b192369b8.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="github-section">
+            <a href="https://github.com/little-software-engineer" target="_blank" class="github-link">
+                <i class="fab fa-github"></i>
+                <span>GitHub Profile</span>
+            </a>
+        </div>
+
+        <div class="music-player">
+            <nav>
+                <div class="circle">
+                    <i class="fa-solid fa-angle-left"></i>
+                </div>
+            </nav>
+
+            <img src="default-cover.jpg" class="song-img" id="albumArt">
+            <h1 id="songTitle">Select a song</h1>
+            <p id="artistName">Upload your music</p>
+
+            <audio id="song"></audio>
+            <input type="range" value="0" id="progress">
+
+            <div class="controls">
+                <div onclick="playPrevious()"><i class="fa-solid fa-backward"></i></div>
+                <div onclick="playPause()"><i class="fa-solid fa-play" id="ctrlIcon"></i></div>
+                <div onclick="playNext()"><i class="fa-solid fa-forward"></i></div>
+            </div>
+        </div>
+
+        <div class="playlist-panel">
+            <h3>Playlist</h3>
+            <div class="upload-btn">
+                <input type="file" id="audioUpload" accept="audio/*" onchange="handleAudioUpload(event)"
+                    style="display: none;">
+                <button onclick="document.getElementById('audioUpload').click()">Upload Song</button>
+            </div>
+            <div id="playlist" class="playlist-container"></div>
+        </div>
+    </div>
+
+    <script>
+        let progress = document.getElementById("progress");
+        let song = document.getElementById("song");
+        let ctrlIcon = document.getElementById("ctrlIcon");
+        let songTitle = document.getElementById("songTitle");
+        let artistName = document.getElementById("artistName");
+        let albumArt = document.getElementById("albumArt");
+
+        let playlist = [];
+        let currentTrackIndex = 0;
+        let draggedItem = null;
+
+        function togglePlaylist() {
+            const panel = document.getElementById('playlistPanel');
+            panel.classList.toggle('show');
+        }
+
+        function handleAudioUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const track = {
+                file: file,
+                url: URL.createObjectURL(file),
+                title: file.name.replace(/\.[^/.]+$/, ""),
+                artist: "Unknown Artist"
+            };
+
+            new jsmediatags.Reader(file)
+                .setTagsToRead(["title", "artist", "picture"])
+                .read({
+                    onSuccess: function (tag) {
+                        if (tag.tags.title) track.title = tag.tags.title;
+                        if (tag.tags.artist) track.artist = tag.tags.artist;
+
+                        if (tag.tags.picture) {
+                            const { data, format } = tag.tags.picture;
+                            let base64String = "";
+                            for (let i = 0; i < data.length; i++) {
+                                base64String += String.fromCharCode(data[i]);
+                            }
+                            track.artwork = `data:${format};base64,${window.btoa(base64String)}`;
+                        }
+
+                        playlist.push(track);
+                        if (playlist.length === 1) playTrack(0);
+                        else updatePlaylistUI();
+                    },
+                    onError: function (error) {
+                        console.log('Error reading tags:', error);
+                        playlist.push(track);
+                        if (playlist.length === 1) playTrack(0);
+                        else updatePlaylistUI();
+                    }
+                });
+
+            event.target.value = '';
+        }
+
+        function addToPlaylist(track) {
+            playlist.push(track);
+            updatePlaylistUI();
+
+            if (playlist.length === 1) {
+                playTrack(0);
+            }
+        }
+
+        function updatePlaylistUI() {
+            const playlistElement = document.getElementById('playlist');
+            playlistElement.innerHTML = playlist.map((track, index) => `
+                <div class="playlist-item ${index === currentTrackIndex ? 'active' : ''}" 
+                     draggable="true" 
+                     data-index="${index}"
+                     onclick="handlePlaylistItemClick(event, ${index})">
+                    <div class="playlist-item-controls">
+                        <i class="fa-solid fa-grip-lines drag-handle"></i>
+                    </div>
+                    <div class="playlist-item-info">
+                        <div class="track-title">${track.title}</div>
+                        <div class="track-artist">${track.artist}</div>
+                    </div>
+                    <div class="playlist-item-actions">
+                        <i class="fa-solid fa-times delete-btn" onclick="handleDeleteClick(event, ${index})"></i>
+                    </div>
+                </div>
+            `).join('');
+
+            const items = playlistElement.getElementsByClassName('playlist-item');
+            Array.from(items).forEach(item => {
+                item.addEventListener('dragstart', handleDragStart);
+                item.addEventListener('dragover', handleDragOver);
+                item.addEventListener('drop', handleDrop);
+                item.addEventListener('dragend', handleDragEnd);
+            });
+        }
+
+        function handleDragStart(e) {
+            draggedItem = this;
+            this.classList.add('dragging');
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const dropTarget = this;
+
+            if (draggedItem !== dropTarget) {
+                const allItems = [...document.getElementsByClassName('playlist-item')];
+                const draggedIndex = parseInt(draggedItem.dataset.index);
+                const dropIndex = parseInt(dropTarget.dataset.index);
+
+                const temp = playlist[draggedIndex];
+                playlist.splice(draggedIndex, 1);
+                playlist.splice(dropIndex, 0, temp);
+
+                if (currentTrackIndex === draggedIndex) {
+                    currentTrackIndex = dropIndex;
+                } else if (draggedIndex < currentTrackIndex && dropIndex >= currentTrackIndex) {
+                    currentTrackIndex--;
+                } else if (draggedIndex > currentTrackIndex && dropIndex <= currentTrackIndex) {
+                    currentTrackIndex++;
+                }
+
+                updatePlaylistUI();
+            }
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            draggedItem = null;
+        }
+
+        function playTrack(index) {
+            currentTrackIndex = index;
+            const track = playlist[index];
+
+            song.src = track.url;
+            songTitle.textContent = track.title;
+            artistName.textContent = track.artist;
+
+            if (track.artwork) {
+                albumArt.src = track.artwork;
+            } else {
+                setDefaultCover();
+            }
+
+            song.play();
+            ctrlIcon.classList.add("fa-pause");
+            ctrlIcon.classList.remove("fa-play");
+            updatePlaylistUI();
+        }
+
+        function setDefaultCover() {
+            albumArt.src = 'data:image/svg+xml,' + encodeURIComponent(`
+                <svg width="300" height="300" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="100%" height="100%" fill="#2d2d2d"/>
+                    <text x="50%" y="50%" font-family="Arial" font-size="24" fill="white" text-anchor="middle">
+                        ${songTitle.textContent}
+                    </text>
+                </svg>
+            `);
+        }
+
+        function playPause() {
+            if (ctrlIcon.classList.contains("fa-pause")) {
+                song.pause();
+                ctrlIcon.classList.remove("fa-pause");
+                ctrlIcon.classList.add("fa-play");
+            } else {
+                song.play();
+                ctrlIcon.classList.add("fa-pause");
+                ctrlIcon.classList.remove("fa-play");
+            }
+        }
+
+        function playNext() {
+            if (currentTrackIndex < playlist.length - 1) {
+                playTrack(currentTrackIndex + 1);
+            }
+        }
+
+        function playPrevious() {
+            if (currentTrackIndex > 0) {
+                playTrack(currentTrackIndex - 1);
+            }
+        }
+
+        function removeTrack(index) {
+            if (index === currentTrackIndex) {
+                const wasPlaying = !song.paused;
+
+                if (playlist.length > 1) {
+                    if (index < playlist.length - 1) {
+                        URL.revokeObjectURL(playlist[index].url);
+                        playlist.splice(index, 1);
+                        playTrack(index);
+                        if (wasPlaying) song.play();
+                    } else {
+                        URL.revokeObjectURL(playlist[index].url);
+                        playlist.splice(index, 1);
+                        playTrack(index - 1);
+                        if (wasPlaying) song.play();
+                    }
+                } else {
+                    URL.revokeObjectURL(playlist[index].url);
+                    playlist.splice(index, 1);
+                    song.pause();
+                    song.src = '';
+                    songTitle.textContent = 'Select a song';
+                    artistName.textContent = 'Upload your music';
+                    setDefaultCover();
+                    ctrlIcon.classList.remove("fa-pause");
+                    ctrlIcon.classList.add("fa-play");
+                }
+            } else {
+                if (index < currentTrackIndex) {
+                    currentTrackIndex--;
+                }
+                URL.revokeObjectURL(playlist[index].url);
+                playlist.splice(index, 1);
+            }
+
+            updatePlaylistUI();
+        }
+
+        song.addEventListener('timeupdate', () => {
+            progress.value = song.currentTime;
+        });
+
+        song.addEventListener('loadedmetadata', () => {
+            progress.max = song.duration;
+        });
+
+        progress.onchange = function () {
+            song.currentTime = progress.value;
+        }
+
+        song.addEventListener('ended', () => {
+            if (currentTrackIndex < playlist.length - 1) {
+                playNext();
+            } else {
+                ctrlIcon.classList.remove("fa-pause");
+                ctrlIcon.classList.add("fa-play");
+                progress.value = 0;
+            }
+        });
+
+        function handlePlaylistItemClick(event, index) {
+            if (event.target.closest('.drag-handle') || event.target.closest('.delete-btn')) {
+                return;
+            }
+            playTrack(index);
+        }
+
+        function handleDeleteClick(event, index) {
+            event.stopPropagation();
+            removeTrack(index);
+        }
+    </script>
+</body>
+
+</html>
