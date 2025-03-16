@@ -38,6 +38,10 @@
                 <div onclick="playPause()"><i class="fa-solid fa-play" id="ctrlIcon"></i></div>
                 <div onclick="playNext()"><i class="fa-solid fa-forward"></i></div>
             </div>
+            <div class="volume-control">
+                <i class="fa-solid fa-volume-high"></i>
+                <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
+            </div>
         </div>
 
         <div class="playlist-panel">
@@ -58,6 +62,7 @@
         let songTitle = document.getElementById("songTitle");
         let artistName = document.getElementById("artistName");
         let albumArt = document.getElementById("albumArt");
+        let volumeSlider = document.getElementById("volumeSlider");
 
         let playlist = [];
         let currentTrackIndex = 0;
@@ -313,6 +318,11 @@
             event.stopPropagation();
             removeTrack(index);
         }
+
+        // Add volume control functionality
+        volumeSlider.addEventListener('input', function () {
+            song.volume = this.value;
+        });
     </script>
 </body>
 
